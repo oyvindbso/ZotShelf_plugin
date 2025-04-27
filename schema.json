@@ -1,0 +1,93 @@
+{
+    "types": {
+      "Item": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "functions": {
+      "getEpubItems": {
+        "description": "Get EPUB items from Zotero",
+        "async": true,
+        "parameters": [
+          {
+            "name": "collectionID",
+            "type": "string",
+            "optional": true
+          }
+        ],
+        "returns": {
+          "type": "array",
+          "items": {
+            "$ref": "Item"
+          }
+        }
+      },
+      "openEpubItem": {
+        "description": "Open an EPUB in Zotero reader",
+        "async": true,
+        "parameters": [
+          {
+            "name": "itemID",
+            "type": "number"
+          }
+        ],
+        "returns": {
+          "type": "boolean"
+        }
+      },
+      "getCachedCover": {
+        "description": "Get cached cover for an item",
+        "async": false,
+        "parameters": [
+          {
+            "name": "itemID",
+            "type": "number"
+          }
+        ],
+        "returns": {
+          "type": "string"
+        }
+      },
+      "cacheCover": {
+        "description": "Cache a cover for an item",
+        "async": false,
+        "parameters": [
+          {
+            "name": "itemID",
+            "type": "number"
+          },
+          {
+            "name": "coverData",
+            "type": "string"
+          }
+        ],
+        "returns": {
+          "type": "boolean"
+        }
+      },
+      "setCollection": {
+        "description": "Set the current collection filter",
+        "async": false,
+        "parameters": [
+          {
+            "name": "collectionID",
+            "type": "string"
+          }
+        ],
+        "returns": {
+          "type": "boolean"
+        }
+      }
+    }
+  }

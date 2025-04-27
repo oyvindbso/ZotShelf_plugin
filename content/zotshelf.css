@@ -1,0 +1,175 @@
+/* ZotShelf Main Styles for Zotero 7 */
+
+/* Container for the entire shelf view */
+.zotshelf-container {
+    background-color: var(--material-background-color);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Title and toolbar */
+  .zotshelf-toolbar {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid var(--material-divider-color);
+    background-color: var(--material-card-background-color);
+  }
+  
+  .zotshelf-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-right: 15px;
+  }
+  
+  .zotshelf-spacer {
+    flex-grow: 1;
+  }
+  
+  .zotshelf-collection-selector {
+    min-width: 200px;
+    margin-right: 10px;
+    background-color: var(--material-card-background-color);
+    border: 1px solid var(--material-border-color);
+    border-radius: 4px;
+    padding: 5px;
+    font-size: 14px;
+  }
+  
+  .zotshelf-button {
+    padding: 5px 10px;
+    margin-left: 5px;
+    background-color: var(--material-card-background-color);
+    border: 1px solid var(--material-border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .zotshelf-button:hover {
+    background-color: var(--material-ripple-color);
+  }
+  
+  /* Grid layout for book covers */
+  .zotshelf-grid-container {
+    flex-grow: 1;
+    overflow: auto;
+    padding: 15px;
+  }
+  
+  .zotshelf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    grid-gap: 20px;
+    padding: 10px;
+  }
+  
+  /* Individual book cover items */
+  .book-cover-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    padding: 10px;
+    border-radius: 5px;
+  }
+  
+  .book-cover-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    background-color: var(--material-card-background-color);
+  }
+  
+  /* Book cover images */
+  .book-cover-image {
+    width: 120px;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    background-color: var(--material-card-background-color);
+  }
+  
+  /* Placeholder for missing cover images */
+  .book-cover-placeholder {
+    width: 120px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background-color: var(--material-card-background-color);
+    color: var(--material-disabled-text-color);
+    font-size: 0.8em;
+    text-align: center;
+    border-radius: 3px;
+    padding: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  /* Book title below the cover */
+  .book-title {
+    margin-top: 8px;
+    font-size: 0.9em;
+    text-align: center;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--material-primary-text-color);
+  }
+  
+  /* Loading and status indicators */
+  .zotshelf-status-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+  
+  .zotshelf-loading-progress {
+    width: 50px;
+    height: 50px;
+    border: 5px solid var(--material-divider-color);
+    border-top: 5px solid var(--material-primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+  }
+  
+  .zotshelf-status-message {
+    color: var(--material-secondary-text-color);
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* No items message */
+  .zotshelf-no-items {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--material-secondary-text-color);
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .zotshelf-no-items-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+  }
+  
+  /* Dark mode adjustments */
+  @media (prefers-color-scheme: dark) {
+    .book-cover-placeholder {
+      background-color: var(--material-card-background-color-dark, #333);
+      color: var(--material-disabled-text-color-dark, #999);
+    }
+  }
