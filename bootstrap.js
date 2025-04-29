@@ -20,16 +20,42 @@ function initializeZotShelf() {
     Services.console.logStringMessage("ZotShelf: Initializing plugin...");
     
     try {
+        // For WebExtensions in Zotero 7, we need to use the addon URI directly
+        let uri = "chrome://zotshelf/content/zotshelf.js";
+        
+        // Try direct loading with less dependencies
+        Services.console.logStringMessage("ZotShelf: Trying to load from: " + uri);
+        
         // Try to load our main plugin file
         let loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
                     .getService(Components.interfaces.mozIJSSubScriptLoader);
                     
-        // Load the main script - this will execute ZotShelf.init()
-        loader.loadSubScript("chrome://zotshelf/content/zotshelf.js");
+        // Load the main script
+        loader.loadSubScript(uri);
         
         Services.console.logStringMessage("ZotShelf: Main script loaded successfully");
     } catch (e) {
-        Services.console.logStringMessage("ZotShelf: Error loading main script: " + e);
+        Services.console.logStringMessage("ZotShelf: Error loading main script: " + e.name + ": " + e.message);
+        
+        // Try an alternate approach for Zotero 7
+        try {
+            Services.console.logStringMessage("ZotShelf: Trying alternate loading approach...");
+            
+            // Get the add-on ID from the bootstrap data
+            let addonID = "zotshelf@example.com";
+            
+            // Get the resource URL for the add-on
+            let resourceURI = Services.io.newURI(`resource://${addonID.replace('@', '-at-')}/`);
+            
+            // Load the main script from the resource URI
+            let scriptURI = resourceURI.resolve("content/zotshelf.js");
+            Services.console.logStringMessage("ZotShelf: Trying to load from: " + scriptURI);
+            
+            loader.loadSubScript(scriptURI);
+            Services.console.logStringMessage("ZotShelf: Main script loaded successfully via alternate approach");
+        } catch (err) {
+            Services.console.logStringMessage("ZotShelf: Error in alternate loading approach: " + err.name + ": " + err.message);
+        }
     }
 }
 
