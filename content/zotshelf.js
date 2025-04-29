@@ -3,6 +3,16 @@
  * 
  * This file contains the main functionality of the ZotShelf plugin.
  */
+/**
+ * ZotShelf - A Zotero 7 plugin for displaying EPUB book covers in a grid view
+ * 
+ * This file contains the main functionality of the ZotShelf plugin.
+ */
+
+// Log that the script is being loaded
+if (typeof Services !== 'undefined') {
+  Services.console.logStringMessage("ZotShelf: zotshelf.js is being loaded");
+}
 
 var ZotShelf = {
     // Plugin constants
@@ -19,7 +29,18 @@ var ZotShelf = {
      * Initialize the ZotShelf plugin when Zotero is ready
      */
     init: async function() {
+      if (typeof Services !== 'undefined') {
+        Services.console.logStringMessage("ZotShelf: init() called");
+      }
+      
       if (this._initialized) return;
+      
+      if (typeof Zotero === 'undefined') {
+        if (typeof Services !== 'undefined') {
+          Services.console.logStringMessage("ZotShelf: Zotero object is undefined!");
+        }
+        return;
+      }
       
       Zotero.debug('ZotShelf: Initializing');
       
@@ -46,8 +67,12 @@ var ZotShelf = {
         Zotero.debug('ZotShelf: Initialization complete');
       } catch (e) {
         Zotero.logError('ZotShelf: Error initializing: ' + e);
+        if (typeof Services !== 'undefined') {
+          Services.console.logStringMessage("ZotShelf: Error in init(): " + e);
+        }
       }
     },
+    
     
     /**
      * Register CSS stylesheet
