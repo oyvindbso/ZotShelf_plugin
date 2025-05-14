@@ -9,67 +9,83 @@ function startup(data, reason) {
     if (typeof Zotero === 'undefined') {
         Services.obs.addObserver(function observer(subject, topic, data) {
             Services.obs.removeObserver(observer, topic);
-            initializeZotShelf();
+            initializePlugin();
         }, "zotero-loaded", false);
     } else {
-        initializeZotShelf();
+        initializePlugin();
     }
 }
 
-function initializeZotShelf() {
+function initializePlugin() {
     Services.console.logStringMessage("ZotShelf: Initializing plugin...");
     
+    // Try a direct approach for Zotero 7
     try {
-        // For WebExtensions in Zotero 7, we need to use the addon URI directly
-        let uri = "chrome://zotshelf/content/zotshelf.js";
+        // Create a direct require function for the add-on
+        let id = "zotshelf@example.com";
+        let baseURI = "chrome://zotshelf/content/";
         
-        // Try direct loading with less dependencies
-        Services.console.logStringMessage("ZotShelf: Trying to load from: " + uri);
+        Services.console.logStringMessage("ZotShelf: Attempting to load from: " + baseURI + "zotshelf.js");
         
-        // Try to load our main plugin file
+        // Get script loader
         let loader = Components.classes["@mozilla.org/moz/jssubscript-loader;1"]
-                    .getService(Components.interfaces.mozIJSSubScriptLoader);
-                    
-        // Load the main script
-        loader.loadSubScript(uri);
+                     .getService(Components.interfaces.mozIJSSubScriptLoader);
         
-        Services.console.logStringMessage("ZotShelf: Main script loaded successfully");
+        // Load directly
+        loader.loadSubScript(baseURI + "zotshelf.js");
+        
+        Services.console.logStringMessage("ZotShelf: Successfully loaded main script");
     } catch (e) {
-        Services.console.logStringMessage("ZotShelf: Error loading main script: " + e.name + ": " + e.message);
+        Services.console.logStringMessage("ZotShelf: Error loading main script: " + e);
         
-        // Try an alternate approach for Zotero 7
+        // Try an alternative approach
         try {
-            Services.console.logStringMessage("ZotShelf: Trying alternate loading approach...");
+            Services.console.logStringMessage("ZotShelf: Trying alternative loading method...");
             
-            // Get the add-on ID from the bootstrap data
-            let addonID = "zotshelf@example.com";
+            // Create a temporary event to communicate with the background page
+            let appStartupComplete = false;
+            let startupObserver = {
+                observe: function(subject, topic, data) {
+                    if (topic == "zotero-ready") {
+                        appStartupComplete = true;
+                        Services.console.logStringMessage("ZotShelf: Zotero is ready");
+                        
+                        // Add a simple button to test
+                        try {
+                            if (typeof Zotero != 'undefined' && 
+                                typeof Zotero.Toolbar != 'undefined' && 
+                                typeof Zotero.Toolbar.registerButton == 'function') {
+                                
+                                Zotero.Toolbar.registerButton({
+                                    id: 'zotshelf-button',
+                                    label: 'ZotShelf',
+                                    tooltiptext: 'View EPUBs in a shelf view',
+                                    onAction: function() {
+                                        alert('ZotShelf button clicked!');
+                                    }
+                                });
+                                
+                                Services.console.logStringMessage("ZotShelf: Successfully registered button directly");
+                            } else {
+                                Services.console.logStringMessage("ZotShelf: Zotero.Toolbar is not available");
+                            }
+                        } catch (e) {
+                            Services.console.logStringMessage("ZotShelf: Error registering button: " + e);
+                        }
+                    }
+                }
+            };
             
-            // Get the resource URL for the add-on
-            let resourceURI = Services.io.newURI(`resource://${addonID.replace('@', '-at-')}/`);
+            Services.obs.addObserver(startupObserver, "zotero-ready", false);
             
-            // Load the main script from the resource URI
-            let scriptURI = resourceURI.resolve("content/zotshelf.js");
-            Services.console.logStringMessage("ZotShelf: Trying to load from: " + scriptURI);
-            
-            loader.loadSubScript(scriptURI);
-            Services.console.logStringMessage("ZotShelf: Main script loaded successfully via alternate approach");
-        } catch (err) {
-            Services.console.logStringMessage("ZotShelf: Error in alternate loading approach: " + err.name + ": " + err.message);
+        } catch (e2) {
+            Services.console.logStringMessage("ZotShelf: Error in alternative method: " + e2);
         }
     }
 }
 
 function shutdown(data, reason) {
     Services.console.logStringMessage("ZotShelf: Plugin shutting down");
-    
-    // Try to run the onShutdown function if it exists
-    if (typeof onShutdown === 'function') {
-        try {
-            onShutdown();
-        } catch (e) {
-            Services.console.logStringMessage("ZotShelf: Error during shutdown: " + e);
-        }
-    }
 }
 
 function install(data, reason) {
