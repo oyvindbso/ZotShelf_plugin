@@ -92,41 +92,41 @@ var ZotShelf = {
      * Register the main shelf view
      */
     registerShelfView: function() {
-      if (!Zotero.ViewHelpers) {
-        Zotero.debug('ZotShelf: ViewHelpers not available');
+      if (!Zotero.ViewManager) {
+        Zotero.debug('ZotShelf: ViewManager not available');
         return;
       }
       
-      Zotero.ViewHelpers.registerView({
+      Zotero.ViewManager.registerView({
         id: 'zotshelf-view',
         name: 'Shelf View',
-        types: ['library', 'collection', 'search', 'trash'],
-        load: (target) => {
-          // Load the shelf view module dynamically
-          const module = import(chrome.runtime.getURL('content/views/shelf-view.js'));
-          return module.then(m => {
-            const view = new m.ShelfView(target);
-            view.collection = this._currentCollection;
-            view.init();
-            this._shelfPanel = view;
-            return view;
-          });
+        hint: 'EPUB Bookshelf',
+        component: async function(target) {
+          // Import the shelf view
+          const { ShelfView } = await import(browser.runtime.getURL('content/views/shelf-view.js'));
+          const view = new ShelfView(target);
+          view.collection = ZotShelf._currentCollection;
+          await view.init();
+          ZotShelf._shelfPanel = view;
+          return view;
         }
       });
-    },
+    }
     
     /**
      * Register toolbar button
      */
     registerToolbarButton: function() {
-      // Create a toolbar button
-      Zotero.Toolbar.registerButton({
-        id: 'zotshelf-button',
-        label: 'Shelf View',
-        tooltiptext: 'View EPUBs in a shelf view',
-        icon: 'chrome://zotshelf/content/assets/icon-16.png',
-        onAction: () => this.toggleShelfView()
-      });
+      // Create a toolbar button with the proper Zotero 7 API
+      if (Zotero.Toolbar) {
+        Zotero.Toolbar.createButton({
+          id: 'zotshelf-button',
+          label: 'Shelf View',
+          tooltip: 'View EPUBs in a shelf view',
+          image: 'chrome://zotshelf/content/assets/icon-16.png',
+          onCommand: () => this.toggleShelfView()
+        });
+      }
     },
     
     /**

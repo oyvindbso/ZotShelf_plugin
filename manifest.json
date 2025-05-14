@@ -1,18 +1,36 @@
 {
-    "manifest_version": 2,
-    "name": "ZotShelf",
-    "version": "1.0.0",
-    "description": "A visual EPUB library that displays book covers in a grid view",
-    "author": "Your Name",
-    "homepage_url": "https://github.com/yourusername/zotshelf",
-    "applications": {
+  "manifest_version": 2,
+  "name": "ZotShelf",
+  "version": "1.0.0",
+  "description": "A visual EPUB library that displays book covers in a grid view",
+  "author": "Your Name",
+  "homepage_url": "https://github.com/yourusername/zotshelf",
+  "icons": {
+    "48": "content/assets/icon-48.png",
+    "96": "content/assets/icon-96.png"
+  },
+  "applications": {
     "zotero": {
       "id": "zotshelf@example.com",
-      "strict_min_version": "7.0.0",
-      "strict_max_version": "7.*.*"
+      "update_url": "https://example.com/updates.json",
+      "strict_min_version": "7.0.0-beta.1",
+      "strict_max_version": "7.*"
     }
   },
   "permissions": [
     "storage"
-  ]
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "experiment_apis": {
+    "shelf": {
+      "schema": "schema.json",
+      "parent": {
+        "scopes": ["application"],
+        "script": "background.js",
+        "events": ["startup"]
+      }
+    }
+  }
 }

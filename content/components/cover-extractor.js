@@ -100,16 +100,15 @@ export class CoverExtractor {
      * @returns {Promise<Object>} - JSZip object
      */
     static async openZip(data) {
-      // We use the built-in ZIP functionality in Zotero 7
       try {
         // Convert ArrayBuffer to Uint8Array for JSZip
         const uint8Array = new Uint8Array(data);
         
-        // Load JSZip (available in Zotero 7)
-        const JSZip = Components.utils.import('resource://zotero/jszip.js').JSZip;
+        // Load JSZip - Updated for Zotero 7
+        const JSZip = await import(browser.runtime.getURL("lib/jszip.min.js"));
         
         // Load the ZIP
-        const zip = new JSZip();
+        const zip = new JSZip.default();
         await zip.loadAsync(uint8Array);
         
         return zip;
