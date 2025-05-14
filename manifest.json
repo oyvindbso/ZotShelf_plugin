@@ -27,7 +27,7 @@
     "shelf": {
       "schema": "schema.json",
       "parent": {
-        "scopes": ["application"],
+        "scopes": ["addon_parent"],
         "script": "background.js",
         "events": ["startup"]
       }
