@@ -322,7 +322,7 @@ var ZotShelf = {
     Zotero.Notifier.unregisterObserver(ZotShelf, 'zotshelf');
     
     // Unregister stylesheets
-    const css = 'chrome://zotshelf/content/zotshelf.css';
+    const cssURL = this._extension.getURL('content/zotshelf.css');
     const sss = Components.classes["@mozilla.org/content/style-sheet-service;1"]
                   .getService(Components.interfaces.nsIStyleSheetService);
     const uri = Services.io.newURI(css, null, null);
