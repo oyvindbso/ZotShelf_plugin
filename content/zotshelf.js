@@ -3,17 +3,26 @@
  * 
  * This file contains the main functionality of the ZotShelf plugin.
  */
-/**
- * ZotShelf - A Zotero 7 plugin for displaying EPUB book covers in a grid view
- * 
- * This file contains the main functionality of the ZotShelf plugin.
- */
 
+// Ensure we're in the right context
+if (typeof Zotero === 'undefined') {
+  console.error('ZotShelf: Zotero not available');
+}
 
-// Log that the script is being loaded
-Services.console.logStringMessage("ZotShelf: zotshelf.js is being loaded from WebExtension");
+// Initialize ZotShelf in the global window context
+(function() {
+  'use strict';
+  
+  console.log("ZotShelf: Main script loading...");
+  
+  // Get the extension context from the global variable set by background.js
+  const extension = window.ZotShelfExtension;
+  if (!extension) {
+    console.error('ZotShelf: Extension context not available');
+    return;
+  }
 
-var ZotShelf = {
+  window.ZotShelf = {
     // Plugin constants
     EPUB_MIME_TYPE: 'application/epub+zip',
     CACHE_EXPIRY: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
@@ -23,33 +32,33 @@ var ZotShelf = {
     _cachedCovers: {},
     _currentCollection: null,
     _shelfPanel: null,
-    _extension: null,
+    _extension: extension,
     
     /**
-     * Initialize the ZotShelf plugin when Zotero is ready
+     * Initialize the ZotShelf plugin
      */
-    init: async function(extension) {
-      Services.console.logStringMessage("ZotShelf: init() called");
+    init: async function() {
+      console.log("ZotShelf: init() called");
       
-      if (this._initialized) return;
-      
-      // Store extension object for resource URLs
-      this._extension = extension;
-      
-      Zotero.debug('ZotShelf: Initializing');
+      if (this._initialized) {
+        console.log("ZotShelf: Already initialized");
+        return;
+      }
       
       try {
-        // Wait for Zotero to be fully loaded before initializing
-        await Zotero.Promise.delay(1000);
+        console.log('ZotShelf: Starting initialization...');
+        
+        // Wait a bit for Zotero to be fully ready
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Register style sheet
-        this.registerStyleSheet();
+        await this.registerStyleSheet();
         
         // Register the shelf view
-        this.registerShelfView();
+        await this.registerShelfView();
         
         // Add toolbar button
-        this.registerToolbarButton();
+        await this.registerToolbarButton();
         
         // Set up hooks and observers
         this.setupEventListeners();
@@ -58,41 +67,41 @@ var ZotShelf = {
         await this.loadCachedCovers();
         
         this._initialized = true;
-        Zotero.debug('ZotShelf: Initialization complete');
+        console.log('ZotShelf: Initialization complete');
+        
       } catch (e) {
-        Zotero.logError('ZotShelf: Error initializing: ' + e);
-        Services.console.logStringMessage("ZotShelf: Error in init(): " + e);
+        console.error('ZotShelf: Error initializing:', e);
       }
     },
     
     /**
      * Register CSS stylesheet
      */
-    registerStyleSheet: function() {
+    registerStyleSheet: async function() {
       try {
-        // Use WebExtension path for CSS
         const cssURL = this._extension.getURL('content/zotshelf.css');
-        Services.console.logStringMessage("ZotShelf: Loading CSS from " + cssURL);
+        console.log("ZotShelf: Loading CSS from", cssURL);
         
         const sss = Components.classes["@mozilla.org/content/style-sheet-service;1"]
                       .getService(Components.interfaces.nsIStyleSheetService);
         const uri = Services.io.newURI(cssURL);
         
-        if(!sss.sheetRegistered(uri, sss.USER_SHEET)) {
+        if (!sss.sheetRegistered(uri, sss.USER_SHEET)) {
           sss.loadAndRegisterSheet(uri, sss.USER_SHEET);
+          console.log("ZotShelf: CSS stylesheet registered");
         }
       } catch (e) {
-        Services.console.logStringMessage("ZotShelf: Error registering stylesheet: " + e);
+        console.error("ZotShelf: Error registering stylesheet:", e);
       }
     },
     
     /**
      * Register the main shelf view
      */
-    registerShelfView: function() {
+    registerShelfView: async function() {
       try {
         if (!Zotero.ViewManager) {
-          Zotero.debug('ZotShelf: ViewManager not available');
+          console.log('ZotShelf: ViewManager not available');
           return;
         }
         
@@ -104,11 +113,10 @@ var ZotShelf = {
           hint: 'EPUB Bookshelf',
           component: async function(target) {
             try {
-              // Import the shelf view - note use of WebExtension path
-              const viewURL = self._extension.getURL('content/views/shelf-view.js');
-              Services.console.logStringMessage("ZotShelf: Loading view from " + viewURL);
+              console.log("ZotShelf: Creating shelf view component");
               
-              // Use dynamic import for the module
+              // Dynamically import the ShelfView module
+              const viewURL = self._extension.getURL('content/views/shelf-view.js');
               const module = await import(viewURL);
               const ShelfView = module.ShelfView;
               
@@ -118,59 +126,70 @@ var ZotShelf = {
               self._shelfPanel = view;
               return view;
             } catch (e) {
-              Services.console.logStringMessage("ZotShelf: Error creating view: " + e);
+              console.error("ZotShelf: Error creating view:", e);
               return null;
             }
           }
         });
+        
+        console.log("ZotShelf: Shelf view registered");
       } catch (e) {
-        Services.console.logStringMessage("ZotShelf: Error registering view: " + e);
+        console.error("ZotShelf: Error registering view:", e);
       }
     },
-    
-    // ... [rest of ZotShelf implementation] ...
     
     /**
      * Register toolbar button
      */
-    registerToolbarButton: function() {
+    registerToolbarButton: async function() {
       try {
-        // Create a toolbar button with the proper Zotero 7 API
-        if (Zotero.Toolbar) {
-          // Use WebExtension path for icon
-          const iconURL = this._extension.getURL('content/assets/icon-16.png');
+        // For Zotero 7, we need to add to the existing toolbar
+        const doc = window.document;
+        const toolbar = doc.getElementById('zotero-toolbar');
+        
+        if (toolbar) {
+          // Create the button element
+          const button = doc.createElement('toolbarbutton');
+          button.id = 'zotshelf-toolbar-button';
+          button.setAttribute('label', 'Shelf View');
+          button.setAttribute('tooltiptext', 'View EPUBs in a shelf view');
+          button.setAttribute('class', 'zotero-tb-button');
           
-          Zotero.Toolbar.createButton({
-            id: 'zotshelf-button',
-            label: 'Shelf View',
-            tooltip: 'View EPUBs in a shelf view',
-            image: iconURL,
-            onCommand: () => this.toggleShelfView()
-          });
+          // Add click handler
+          button.addEventListener('click', () => this.toggleShelfView());
+          
+          // Add the button to the toolbar
+          toolbar.appendChild(button);
+          
+          console.log("ZotShelf: Toolbar button added");
+        } else {
+          console.log("ZotShelf: Toolbar not found");
         }
       } catch (e) {
-        Services.console.logStringMessage("ZotShelf: Error registering toolbar button: " + e);
+        console.error("ZotShelf: Error registering toolbar button:", e);
       }
     },
-    
-    // ... [rest of methods remain unchanged] ...
-  };
     
     /**
      * Set up the necessary event listeners
      */
     setupEventListeners: function() {
-      // Listen for item changes to update the shelf when necessary
-      let notifier = Zotero.Notifier;
-      
-      notifier.registerObserver(this, ['item'], 'zotshelf');
-      
-      // Listen for window resize
-      window.addEventListener('resize', () => {
-        if (this._shelfPanel && this._shelfPanel.isActive()) {
-          this._shelfPanel.adjustGridLayout();
+      try {
+        // Listen for item changes to update the shelf when necessary
+        if (Zotero.Notifier) {
+          Zotero.Notifier.registerObserver(this, ['item'], 'zotshelf');
+          console.log("ZotShelf: Event listeners set up");
         }
-      });
+        
+        // Listen for window resize
+        window.addEventListener('resize', () => {
+          if (this._shelfPanel && this._shelfPanel.isActive()) {
+            this._shelfPanel.adjustGridLayout();
+          }
+        });
+      } catch (e) {
+        console.error("ZotShelf: Error setting up event listeners:", e);
+      }
     },
     
     /**
@@ -205,10 +224,10 @@ var ZotShelf = {
           });
           
           this._cachedCovers = cachedData;
-          Zotero.debug('ZotShelf: Loaded cached covers for ' + Object.keys(this._cachedCovers).length + ' items');
+          console.log('ZotShelf: Loaded cached covers for', Object.keys(this._cachedCovers).length, 'items');
         }
       } catch (e) {
-        Zotero.debug('ZotShelf: Error loading cached covers: ' + e);
+        console.error('ZotShelf: Error loading cached covers:', e);
         this._cachedCovers = {};
       }
     },
@@ -220,9 +239,9 @@ var ZotShelf = {
       try {
         let cachedCoversString = JSON.stringify(this._cachedCovers);
         Zotero.Prefs.set('zotshelf.cachedCovers', cachedCoversString);
-        Zotero.debug('ZotShelf: Saved cached covers');
+        console.log('ZotShelf: Saved cached covers');
       } catch (e) {
-        Zotero.debug('ZotShelf: Error saving cached covers: ' + e);
+        console.error('ZotShelf: Error saving cached covers:', e);
       }
     },
     
@@ -230,14 +249,14 @@ var ZotShelf = {
      * Toggle the ZotShelf view
      */
     toggleShelfView: function() {
-      if (this._shelfPanel) {
-        if (this._shelfPanel.isActive()) {
+      try {
+        if (this._shelfPanel && this._shelfPanel.isActive()) {
           Zotero.ViewManager.close('zotshelf-view');
         } else {
           Zotero.ViewManager.open('zotshelf-view');
         }
-      } else {
-        Zotero.ViewManager.open('zotshelf-view');
+      } catch (e) {
+        console.error('ZotShelf: Error toggling shelf view:', e);
       }
     },
     
@@ -250,25 +269,31 @@ var ZotShelf = {
         this._shelfPanel.collection = this._currentCollection;
         this._shelfPanel.refreshShelf();
       }
+      return true;
     },
     
     /**
      * Get all EPUB items from the library, optionally filtered by collection
      */
     getEpubItems: async function(collectionID) {
-      let s = new Zotero.Search();
-      
-      if (collectionID) {
-        s.addCondition('collectionID', 'is', collectionID);
+      try {
+        let s = new Zotero.Search();
+        
+        if (collectionID) {
+          s.addCondition('collectionID', 'is', collectionID);
+        }
+        
+        s.addCondition('contentType', 'is', this.EPUB_MIME_TYPE);
+        
+        let itemIDs = await s.search();
+        let items = await Zotero.Items.getAsync(itemIDs);
+        
+        console.log('ZotShelf: Found', items.length, 'EPUB items');
+        return items;
+      } catch (e) {
+        console.error('ZotShelf: Error getting EPUB items:', e);
+        return [];
       }
-      
-      s.addCondition('contentType', 'is', this.EPUB_MIME_TYPE);
-      
-      let itemIDs = await s.search();
-      let items = await Zotero.Items.getAsync(itemIDs);
-      
-      Zotero.debug('ZotShelf: Found ' + items.length + ' EPUB items');
-      return items;
     },
     
     /**
@@ -291,48 +316,54 @@ var ZotShelf = {
           data: coverData,
           timestamp: new Date().getTime()
         };
+        
+        // Save to persistent storage
+        this.saveCachedCovers();
+        return true;
       }
+      return false;
     },
     
     /**
      * Open an EPUB item in Zotero's reader
      */
-    openEpubItem: function(itemID) {
-      Zotero.debug('ZotShelf: Opening EPUB item ' + itemID);
+    openEpubItem: async function(itemID) {
+      console.log('ZotShelf: Opening EPUB item', itemID);
       
       try {
         let item = Zotero.Items.get(itemID);
         if (item) {
-          Zotero.Reader.open(item.id);
+          if (Zotero.Reader && Zotero.Reader.open) {
+            await Zotero.Reader.open(item.id);
+            return true;
+          } else {
+            console.error('ZotShelf: Reader not available');
+            return false;
+          }
         }
+        return false;
       } catch (e) {
-        Zotero.debug('ZotShelf: Error opening EPUB: ' + e);
-        alert('Error opening EPUB: ' + e);
+        console.error('ZotShelf: Error opening EPUB:', e);
+        return false;
       }
     }
   };
   
-  // Initialize the plugin when Zotero is ready
-  window.addEventListener('load', function() {
-    ZotShelf.init();
-  }, false);
-  
-  // Manage plugin lifecycle
-  function onShutdown() {
-    Zotero.Notifier.unregisterObserver(ZotShelf, 'zotshelf');
-    
-    // Unregister stylesheets
-    const cssURL = this._extension.getURL('content/zotshelf.css');
-    const sss = Components.classes["@mozilla.org/content/style-sheet-service;1"]
-                  .getService(Components.interfaces.nsIStyleSheetService);
-    const uri = Services.io.newURI(css, null, null);
-    
-    if(sss.sheetRegistered(uri, sss.USER_SHEET)) {
-      sss.unregisterSheet(uri, sss.USER_SHEET);
-    }
-    
-    // Unregister view
-    if (Zotero.ViewHelpers) {
-      Zotero.ViewHelpers.unregisterView('zotshelf-view');
-    }
+  // Auto-initialize when the script loads
+  if (Zotero && Zotero.initialized) {
+    window.ZotShelf.init();
+  } else {
+    // Wait for Zotero to be ready
+    const initWhenReady = () => {
+      if (Zotero && Zotero.initialized) {
+        window.ZotShelf.init();
+      } else {
+        setTimeout(initWhenReady, 100);
+      }
+    };
+    initWhenReady();
   }
+  
+  console.log("ZotShelf: Main script loaded and initialization started");
+  
+})();

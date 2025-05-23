@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+
+    <Description about="urn:mozilla:install-manifest">
+        <em:id>zotshelf@example.com</em:id>
+        <em:name>ZotShelf</em:name>
+        <em:version>1.0.0</em:version>
+        <em:description>A visual EPUB library that displays book covers in a grid view</em:description>
+        <em:creator>Your Name</em:creator>
+        <em:homepageURL>https://github.com/yourusername/zotshelf</em:homepageURL>
+        <em:type>2</em:type>
+        <em:bootstrap>true</em:bootstrap>
+        <em:multiprocessCompatible>true</em:multiprocessCompatible>
+
+        <!-- Zotero target application -->
+        <em:targetApplication>
+            <Description>
+                <em:id>zotero@chnm.gmu.edu</em:id>
+                <em:minVersion>7.0.0</em:minVersion>
+                <em:maxVersion>7.*</em:maxVersion>
+            </Description>
+        </em:targetApplication>
+
+        <!-- Firefox target application (for Zotero Connector) -->
+        <em:targetApplication>
+            <Description>
+                <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+                <em:minVersion>102.0</em:minVersion>
+                <em:maxVersion>*</em:maxVersion>
+            </Description>
+        </em:targetApplication>
+    </Description>
+</RDF>

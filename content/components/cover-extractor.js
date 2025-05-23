@@ -23,7 +23,7 @@ export class CoverExtractor {
      * @returns {Promise<string|null>} - Base64 encoded cover image or null if not found
      */
     static async extractCover(item) {
-      Zotero.debug('CoverExtractor: Extracting cover from item ' + item.id);
+      console.log('CoverExtractor: Extracting cover from item', item.id);
       
       try {
         // Get the attachment file
@@ -62,7 +62,7 @@ export class CoverExtractor {
         
         return coverData;
       } catch (e) {
-        Zotero.debug('CoverExtractor: Error extracting cover: ' + e);
+        console.error('CoverExtractor: Error extracting cover:', e);
         return null;
       }
     }
@@ -104,16 +104,21 @@ export class CoverExtractor {
         // Convert ArrayBuffer to Uint8Array for JSZip
         const uint8Array = new Uint8Array(data);
         
-        // Load JSZip - Updated for Zotero 7
-        const JSZip = await import(browser.runtime.getURL("lib/jszip.min.js"));
+        // Load JSZip from the extension
+        const extension = window.ZotShelfExtension;
+        const jszipURL = extension.getURL("lib/jszip.min.js");
         
-        // Load the ZIP
-        const zip = new JSZip.default();
+        // Import JSZip
+        const JSZipModule = await import(jszipURL);
+        const JSZip = JSZipModule.default || JSZipModule;
+        
+        // Create new JSZip instance
+        const zip = new JSZip();
         await zip.loadAsync(uint8Array);
         
         return zip;
       } catch (e) {
-        Zotero.debug('CoverExtractor: Error opening ZIP: ' + e);
+        console.error('CoverExtractor: Error opening ZIP:', e);
         throw e;
       }
     }
@@ -137,13 +142,20 @@ export class CoverExtractor {
         const parser = new DOMParser();
         const doc = parser.parseFromString(containerXml, 'application/xml');
         
+        // Check for parsing errors
+        const parserError = doc.querySelector('parsererror');
+        if (parserError) {
+          console.error('CoverExtractor: XML parsing error:', parserError.textContent);
+          return null;
+        }
+        
         // Get the path to the OPF file
         const rootfileElement = doc.querySelector('rootfile');
         if (!rootfileElement) return null;
         
         return rootfileElement.getAttribute('full-path');
       } catch (e) {
-        Zotero.debug('CoverExtractor: Error getting OPF path: ' + e);
+        console.error('CoverExtractor: Error getting OPF path:', e);
         return null;
       }
     }
@@ -168,70 +180,58 @@ export class CoverExtractor {
         const parser = new DOMParser();
         const doc = parser.parseFromString(opfXml, 'application/xml');
         
+        // Check for parsing errors
+        const parserError = doc.querySelector('parsererror');
+        if (parserError) {
+          console.error('CoverExtractor: OPF XML parsing error:', parserError.textContent);
+          return null;
+        }
+        
         // Try multiple methods to find the cover
         
-        // 1. First, try XPath queries to find cover
-        for (const xpath of this.COVER_XPATHS) {
-          const result = doc.evaluate(
-            xpath, 
-            doc, 
-            null, 
-            XPathResult.STRING_TYPE, 
-            null
-          );
-          
-          const coverHref = result.stringValue;
-          if (coverHref) {
-            // If this is just an ID, we need to find the href
-            if (!coverHref.includes('.')) {
-              const itemHref = doc.evaluate(
-                `//item[@id="${coverHref}"]/@href`,
-                doc,
-                null,
-                XPathResult.STRING_TYPE,
-                null
-              ).stringValue;
-              
-              if (itemHref) return itemHref;
-            } else {
-              return coverHref;
+        // 1. Look for meta element with name="cover"
+        const coverMeta = doc.querySelector('meta[name="cover"]');
+        if (coverMeta) {
+          const coverId = coverMeta.getAttribute('content');
+          if (coverId) {
+            const coverItem = doc.querySelector(`item[id="${coverId}"]`);
+            if (coverItem) {
+              return coverItem.getAttribute('href');
             }
           }
         }
         
-        // 2. Look for image with 'cover' in the ID or properties
-        const items = doc.querySelectorAll('item');
-        for (const item of items) {
-          const id = item.getAttribute('id') || '';
+        // 2. Look for items with cover-related properties
+        const coverItems = doc.querySelectorAll('item[properties*="cover-image"], item[id*="cover"]');
+        for (const item of coverItems) {
           const href = item.getAttribute('href');
-          const properties = item.getAttribute('properties') || '';
           const mediaType = item.getAttribute('media-type') || '';
           
-          if (href && 
-              mediaType.startsWith('image/') && 
-              (id.includes('cover') || properties.includes('cover'))) {
+          if (href && mediaType.startsWith('image/')) {
             return href;
           }
         }
         
-        // 3. Last resort: find the first image in the spine
-        const spine = doc.querySelector('spine');
-        if (spine) {
-          const firstItemref = spine.querySelector('itemref');
-          if (firstItemref) {
-            const idref = firstItemref.getAttribute('idref');
-            if (idref) {
-              const item = doc.querySelector(`item[id="${idref}"]`);
-              if (item) {
-                return item.getAttribute('href');
-              }
-            }
+        // 3. Look for any image items in manifest
+        const imageItems = doc.querySelectorAll('item[media-type^="image/"]');
+        for (const item of imageItems) {
+          const id = item.getAttribute('id') || '';
+          const href = item.getAttribute('href');
+          
+          // Prioritize items with 'cover' in the name
+          if (href && id.toLowerCase().includes('cover')) {
+            return href;
           }
+        }
+        
+        // 4. Fallback: return first image found
+        if (imageItems.length > 0) {
+          return imageItems[0].getAttribute('href');
         }
         
         return null;
       } catch (e) {
-        Zotero.debug('CoverExtractor: Error getting cover path: ' + e);
+        console.error('CoverExtractor: Error getting cover path:', e);
         return null;
       }
     }
@@ -281,7 +281,7 @@ export class CoverExtractor {
     static async extractAndEncodeImage(zip, path) {
       try {
         if (!zip.files[path]) {
-          Zotero.debug('CoverExtractor: Cover file not found: ' + path);
+          console.log('CoverExtractor: Cover file not found:', path);
           return null;
         }
         
@@ -290,7 +290,7 @@ export class CoverExtractor {
         
         return base64;
       } catch (e) {
-        Zotero.debug('CoverExtractor: Error extracting image: ' + e);
+        console.error('CoverExtractor: Error extracting image:', e);
         return null;
       }
     }

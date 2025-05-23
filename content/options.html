@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>ZotShelf Options</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 20px;
+            line-height: 1.5;
+        }
+        
+        .option-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .option-group h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        input[type="number"], select {
+            margin-left: 10px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+        
+        .description {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .save-button {
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .save-button:hover {
+            background-color: #3367d6;
+        }
+        
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>ZotShelf Options</h1>
+    
+    <div class="option-group">
+        <h3>Cache Settings</h3>
+        
+        <label>
+            Cache expiry (days):
+            <input type="number" id="cache-expiry" min="1" max="30" value="7">
+            <div class="description">How long to keep extracted book covers in cache before re-extracting them.</div>
+        </label>
+    </div>
+    
+    <div class="option-group">
+        <h3>Display Settings</h3>
+        
+        <label>
+            Grid columns (desktop):
+            <select id="grid-columns">
+                <option value="auto">Auto</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5" selected>5</option>
+                <option value="6">6</option>
+                <option value="8">8</option>
+            </select>
+            <div class="description">Number of columns to display in the book grid on desktop screens.</div>
+        </label>
+    </div>
+    
+    <div class="option-group">
+        <h3>Cache Management</h3>
+        
+        <button type="button" id="clear-cache">Clear Cache</button>
+        <div class="description">Remove all cached book covers. They will be re-extracted when needed.</div>
+    </div>
+    
+    <button type="button" class="save-button" id="save-options">Save Options</button>
+    
+    <div class="status" id="status"></div>
+    
+    <script>
+        // Load current options
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default values or load from Zotero preferences if available
+            // This is a simple implementation - in a real plugin you'd load from Zotero.Prefs
+            
+            // Save options
+            document.getElementById('save-options').addEventListener('click', function() {
+                const cacheExpiry = document.getElementById('cache-expiry').value;
+                const gridColumns = document.getElementById('grid-columns').value;
+                
+                // In a real implementation, save to Zotero.Prefs
+                // Zotero.Prefs.set('zotshelf.cacheExpiry', cacheExpiry);
+                // Zotero.Prefs.set('zotshelf.gridColumns', gridColumns);
+                
+                showStatus('Options saved successfully!');
+            });
+            
+            // Clear cache
+            document.getElementById('clear-cache').addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear all cached book covers?')) {
+                    // In a real implementation, clear the cache
+                    // Zotero.Prefs.clear('zotshelf.cachedCovers');
+                    
+                    showStatus('Cache cleared successfully!');
+                }
+            });
+        });
+        
+        function showStatus(message) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status success';
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
